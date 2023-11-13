@@ -2,30 +2,14 @@ import functools
 import numpy as np
 
 import gymnasium
-from gymnasium.spaces import Dict, Box, Discrete
+from gymnasium.spaces import Dict, Box, Discrete, Tuple
 
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, wrappers
 
-ROCK = 0
-PAPER = 1
-SCISSORS = 2
-NONE = 3
-MOVES = ["ROCK", "PAPER", "SCISSORS", "None"]
 NUM_ITERS = 100
 SPRING_CONSTANT = 0.5
 IDEAL_EDGE_LENGTH = 10
-REWARD_MAP = {
-    (ROCK, ROCK): (0, 0),
-    (ROCK, PAPER): (-1, 1),
-    (ROCK, SCISSORS): (1, -1),
-    (PAPER, ROCK): (1, -1),
-    (PAPER, PAPER): (0, 0),
-    (PAPER, SCISSORS): (-1, 1),
-    (SCISSORS, ROCK): (-1, 1),
-    (SCISSORS, PAPER): (1, -1),
-    (SCISSORS, SCISSORS): (0, 0),
-}
 
 
 # def getCurrentTotalForcesFR(self, agent, s, s_prime):
@@ -115,7 +99,7 @@ class parallel_env(ParallelEnv):
     def observation_space(self, agent):
         # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
         # Implement Later
-        return Dict({"position": Box()})
+        return Dict({"sensor": Tuple(Discrete())})
 
     # Action space should be defined here.
     # If your spaces change over time, remove this line (disable caching).
