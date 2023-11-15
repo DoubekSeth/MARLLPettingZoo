@@ -13,36 +13,49 @@ REPULSION_CONSTANT = 0.5
 IDEAL_EDGE_LENGTH = 10
 
 
-def getCurrentTotalForcesFR(agent):
+def getCurrentTotalForcesFR(self, agent):
     """
     gets an agent and returns all the forces that act on that agent, namely spring forces and repulsion forces
     :param agent: agent to find the forces for
     :return: total force for an agent as a number
     """
-    springForces = calcSpringForces(agent)
-    repulsionForces = calcRepulsionForces(agent)
+    springForces = calcSpringForces(self, agent)
+    repulsionForces = calcRepulsionForces(self, agent)
     totalForces = springForces - repulsionForces
     return np.dot(totalForces, totalForces)**0.5
 
 
-def calcSpringForces(agent):
-    edges = agent.infos["edges"]
+def calcSpringForces(self, agent):
+    """
+    Calculates the spring forces for a given agent
+    :param agent: agent to find the spring forces for
+    :return: a vector representing the sum of all spring forces
+    """
+    edges = self.state[agent]["edges"]
     springForces = np.zeros(2)
 
     for edge in edges:
-        springForces += calcSpringForce(edge)
+        springForces += calcSpringForce(self, edge)
 
     return springForces
 
 
-def calcSpringForce(edge):
-    source = edge.source
-    target = edge.target
+def calcSpringForce(self, edge):
+    """
+    Calculate a specific spring force along one edge
+    :param edge: edge to calculate the spring force for
+    :return: vector representing the force
+    """
+    source = edge["source"]
+    target = edge["target"]
 
-    lengthX = target.x - source.x
-    lengthY = target.y - source.y
+    lengthX = self.state[target]["x"] - self.state[source]["x"]
+    lengthY = self.state[target]["y"] - self.state[source]["y"]
 
     length = (lengthX ** 2 + lengthY ** 2) ** 0.5
+
+    #Avoid division by 0
+    if length == 0: return 0
 
     springForce = SPRING_CONSTANT * np.max([0, length - IDEAL_EDGE_LENGTH])
 
@@ -52,18 +65,33 @@ def calcSpringForce(edge):
 
 
 def calcRepulsionForces(self, agent):
+    """
+    Calculate all the repulsion forces for an agent
+    :param self:
+    :param agent: agent to find the forces for
+    :return: vector representing sum of all repulsion forces
+    """
     repulsionForces = np.zeros(2)
 
     for agentOther in self.agents:
-        repulsionForces += calcRepulsionForce(agent, agentOther)
+        repulsionForces += calcRepulsionForce(self, agent, agentOther)
 
     return repulsionForces
 
 
-def calcRepulsionForce(agent, agentOther):
-    distX = agent.infos["x"] - agentOther.infos["x"]
-    distY = agent.infos["y"] - agentOther.infos["y"]
+def calcRepulsionForce(self, agent, agentOther):
+    """
+    Calculates a single repulsion force between two nodes
+    :param agent: first node
+    :param agentOther: second node
+    :return: vector representing the repulsion force
+    """
+    distX = self.state[agent]["x"] - self.state[agentOther]["x"]
+    distY = self.state[agent]["y"] - self.state[agentOther]["y"]
     distanceSquared = (distX ** 2 + distY ** 2)
+    #Avoid divide by 0
+    if distanceSquared == 0 : return 0
+
     distance = (distX ** 2 + distY ** 2) ** 0.5
 
     repulsionForce = REPULSION_CONSTANT / distanceSquared
@@ -86,7 +114,7 @@ def env(render_mode=None):
         env = wrappers.CaptureStdoutWrapper(env)
     # this wrapper helps error handling for discrete action spaces
     env = wrappers.AssertOutOfBoundsWrapper(env)
-    # Provides a wide vareity of helpful user errors
+    # Provides a wide variety of helpful user errors
     # Strongly recommended
     env = wrappers.OrderEnforcingWrapper(env)
     return env
@@ -132,7 +160,7 @@ class parallel_env(ParallelEnv):
     def observation_space(self, agent):
         # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
         # Implement Later
-        return Dict({"sensor": Tuple(Discrete())})
+        return Dict({"sensor": Tuple(Discrete(50), Discrete(50), Discrete(50), Discrete(50), Discrete(50), Discrete(50))})
 
     # Action space should be defined here.
     # If your spaces change over time, remove this line (disable caching).
@@ -152,8 +180,9 @@ class parallel_env(ParallelEnv):
             return
 
         if len(self.agents) == 2:
-            string = "Current state: Agent1: {} , Agent2: {}".format(
-                MOVES[self.state[self.agents[0]]], MOVES[self.state[self.agents[1]]]
+            string = "Current state: Agent1: {}, {} , Agent2: {}, {}".format(
+                self.state[self.agents[0]]["x"], self.state[self.agents[0]]["y"],
+                self.state[self.agents[1]]["x"], self.state[self.agents[1]]["y"]
             )
         else:
             string = "Game over"
@@ -177,8 +206,16 @@ class parallel_env(ParallelEnv):
         """
         self.agents = self.possible_agents[:]
         self.num_moves = 0
-        observations = {agent: NONE for agent in self.agents}
+        observations = {agent: {} for agent in self.agents}
         infos = {agent: {} for agent in self.agents}
+        #Manually, creating this for now. Hopefully can be passed in
+        observations[self.agents[0]]["x"] = -25
+        observations[self.agents[0]]["y"] = -25
+        observations[self.agents[0]]["edges"] = [{"source": self.agents[0], "target": self.agents[1]}]
+        observations[self.agents[1]]["x"] = 25
+        observations[self.agents[1]]["y"] = 25
+        observations[self.agents[1]]["edges"] = [{"source": self.agents[0], "target": self.agents[1]}]
+        print(observations)
         self.state = observations
 
         return observations, infos
@@ -199,8 +236,8 @@ class parallel_env(ParallelEnv):
             return {}, {}, {}, {}, {}
 
         # rewards for all agents are placed in the rewards dictionary to be returned
-        rewards = {self.agents[0]: getCurrentTotalForcesFR(self.agents[0]),
-                   self.agents[1]: getCurrentTotalForcesFR(self.agents[1])}
+        rewards = {self.agents[0]: getCurrentTotalForcesFR(self, self.agents[0]),
+                   self.agents[1]: getCurrentTotalForcesFR(self, self.agents[1])}
 
         terminations = {agent: False for agent in self.agents}
 
@@ -208,9 +245,10 @@ class parallel_env(ParallelEnv):
         env_truncation = self.num_moves >= NUM_ITERS
         truncations = {agent: env_truncation for agent in self.agents}
 
-        # current observation is just the other player's most recent action
+        # current observation is position of state, as well as graph
         observations = {
-            self.agents[i]: int(actions[self.agents[1 - i]])
+            self.agents[i]: {"x": self.state[self.agents[i]]["x"], "y": self.state[self.agents[i]]["y"],
+                             "edges": self.state[self.agents[i]]["edges"]}
             for i in range(len(self.agents))
         }
         self.state = observations

@@ -1,8 +1,8 @@
-from env import RPS
+from env import graph_layout
 import numpy as np
 import numpy.ma as ma
 
-env = RPS.parallel_env(render_mode="human")
+env = graph_layout.parallel_env(render_mode="human")
 observations, infos = env.reset()
 
 while env.agents:
@@ -13,5 +13,4 @@ while env.agents:
     print(rewards)
     print(terminations)
     print(truncations)
-    print(infos)
 env.close()
