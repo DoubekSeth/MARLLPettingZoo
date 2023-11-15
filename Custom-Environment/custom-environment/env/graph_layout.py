@@ -2,42 +2,75 @@ import functools
 import numpy as np
 
 import gymnasium
-from gymnasium.spaces import Dict, Box, Discrete, Tuple
+from gymnasium.spaces import Dict, Discrete, Tuple
 
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, wrappers
 
 NUM_ITERS = 100
 SPRING_CONSTANT = 0.5
+REPULSION_CONSTANT = 0.5
 IDEAL_EDGE_LENGTH = 10
 
 
-# def getCurrentTotalForcesFR(self, agent, s, s_prime):
-#     springForceX, springForceY = calcSpringForces(agent, s, s_prime)
-#     repulsionForceX = 0
-#     repulsionForceY = 0
-#
-# def calcSpringForces(self, agent, s, s_prime):
-#     edges = agent.infos["edges"]
-#     springForces = np.zeros(2)
-#
-#     for edge in edges:
-#         springForces += calcSpringForce(edge, agent, s, s_prime)
-#
-#
-# def calcSpringForce(self, edge, agent, s, s_prime):
-#     source = edge.source
-#     target = edge.target
-#
-#     lengthX = target.x - source.x
-#     lengthY = target.y - source.y
-#
-#     length = (lengthX**2 + lengthY**2)**0.5
-#
-#     springForce = SPRING_CONSTANT * (length - IDEAL_EDGE_LENGTH)
-#
-#     springForces = np.array([springForce * (lengthX/length), springForce * (lengthY/length)])
+def getCurrentTotalForcesFR(agent):
+    """
+    gets an agent and returns all the forces that act on that agent, namely spring forces and repulsion forces
+    :param agent: agent to find the forces for
+    :return: total force for an agent as a number
+    """
+    springForces = calcSpringForces(agent)
+    repulsionForces = calcRepulsionForces(agent)
+    totalForces = springForces - repulsionForces
+    return np.dot(totalForces, totalForces)**0.5
 
+
+def calcSpringForces(agent):
+    edges = agent.infos["edges"]
+    springForces = np.zeros(2)
+
+    for edge in edges:
+        springForces += calcSpringForce(edge)
+
+    return springForces
+
+
+def calcSpringForce(edge):
+    source = edge.source
+    target = edge.target
+
+    lengthX = target.x - source.x
+    lengthY = target.y - source.y
+
+    length = (lengthX ** 2 + lengthY ** 2) ** 0.5
+
+    springForce = SPRING_CONSTANT * np.max([0, length - IDEAL_EDGE_LENGTH])
+
+    springForces = np.array([springForce * (lengthX / length), springForce * (lengthY / length)])
+
+    return springForces
+
+
+def calcRepulsionForces(self, agent):
+    repulsionForces = np.zeros(2)
+
+    for agentOther in self.agents:
+        repulsionForces += calcRepulsionForce(agent, agentOther)
+
+    return repulsionForces
+
+
+def calcRepulsionForce(agent, agentOther):
+    distX = agent.infos["x"] - agentOther.infos["x"]
+    distY = agent.infos["y"] - agentOther.infos["y"]
+    distanceSquared = (distX ** 2 + distY ** 2)
+    distance = (distX ** 2 + distY ** 2) ** 0.5
+
+    repulsionForce = REPULSION_CONSTANT / distanceSquared
+
+    repulsionForces = np.array([repulsionForce * distX / distance, repulsionForce * distY / distance])
+
+    return repulsionForces
 
 
 def env(render_mode=None):
@@ -166,10 +199,8 @@ class parallel_env(ParallelEnv):
             return {}, {}, {}, {}, {}
 
         # rewards for all agents are placed in the rewards dictionary to be returned
-        rewards = {}
-        rewards[self.agents[0]], rewards[self.agents[1]] = REWARD_MAP[
-            (actions[self.agents[0]], actions[self.agents[1]])
-        ]
+        rewards = {self.agents[0]: getCurrentTotalForcesFR(self.agents[0]),
+                   self.agents[1]: getCurrentTotalForcesFR(self.agents[1])}
 
         terminations = {agent: False for agent in self.agents}
 
