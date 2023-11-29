@@ -215,7 +215,6 @@ class parallel_env(ParallelEnv):
         observations[self.agents[1]]["x"] = 25
         observations[self.agents[1]]["y"] = 25
         observations[self.agents[1]]["edges"] = [{"source": self.agents[0], "target": self.agents[1]}]
-        print(observations)
         self.state = observations
 
         return observations, infos
@@ -235,9 +234,11 @@ class parallel_env(ParallelEnv):
             self.agents = []
             return {}, {}, {}, {}, {}
 
-        # rewards for all agents are placed in the rewards dictionary to be returned
-        rewards = {self.agents[0]: getCurrentTotalForcesFR(self, self.agents[0]),
-                   self.agents[1]: getCurrentTotalForcesFR(self, self.agents[1])}
+        # Find all old forces, as reward = new forces - old forces
+        oldForces = {
+            self.agents[i]: getCurrentTotalForcesFR(self, self.agents[i])
+            for i in range(len(self.agents))
+        }
 
         terminations = {agent: False for agent in self.agents}
 
@@ -261,6 +262,17 @@ class parallel_env(ParallelEnv):
         env_truncation = self.num_moves >= NUM_ITERS
         truncations = {agent: env_truncation for agent in self.agents}
 
+        # Find all new forces, as reward = new forces - old forces
+        newForces = {
+            self.agents[i]: getCurrentTotalForcesFR(self, self.agents[i])
+            for i in range(len(self.agents))
+        }
+
+        # get rewards for each agent, might add small negative living reward?
+        rewards = {
+            self.agents[i]: newForces[self.agents[i]] - oldForces[self.agents[i]]
+            for i in range(len(self.agents))
+        }
         # typically there won't be any information in the infos, but there must
         # still be an entry for each agent
         infos = {agent: {} for agent in self.agents}
