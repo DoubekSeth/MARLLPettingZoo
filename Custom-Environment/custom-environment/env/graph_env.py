@@ -273,6 +273,7 @@ class parallel_env(ParallelEnv):
             self.agents[i]: newForces[self.agents[i]] - oldForces[self.agents[i]]
             for i in range(len(self.agents))
         }
+
         # typically there won't be any information in the infos, but there must
         # still be an entry for each agent
         infos = {agent: {} for agent in self.agents}
