@@ -241,10 +241,6 @@ class parallel_env(ParallelEnv):
 
         terminations = {agent: False for agent in self.agents}
 
-        self.num_moves += 1
-        env_truncation = self.num_moves >= NUM_ITERS
-        truncations = {agent: env_truncation for agent in self.agents}
-
         # current observation is position of state, as well as graph
         observations = {
             self.agents[i]: {"x": self.state[self.agents[i]]["x"], "y": self.state[self.agents[i]]["y"],
@@ -252,6 +248,18 @@ class parallel_env(ParallelEnv):
             for i in range(len(self.agents))
         }
         self.state = observations
+
+        #Process each agent's action
+        displacement = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
+        delta = 0.5
+        for agent, action in actions.items():
+            currAgent = observations[agent]
+            currAgent["x"] = currAgent["x"] + displacement[action][0]*delta
+            currAgent["y"] = currAgent["y"] + displacement[action][1]*delta
+
+        self.num_moves += 1
+        env_truncation = self.num_moves >= NUM_ITERS
+        truncations = {agent: env_truncation for agent in self.agents}
 
         # typically there won't be any information in the infos, but there must
         # still be an entry for each agent

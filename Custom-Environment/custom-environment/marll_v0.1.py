@@ -13,6 +13,7 @@ observations, infos = env.reset()
 while env.agents:
     # this is where you would insert your policy
     actions = {agent: env.action_space(agent).sample() for agent in env.agents}
+    print(actions)
     observations, rewards, terminations, truncations, infos = env.step(actions)
     if not truncations["agent_0"]:
         x0 = observations[env.agents[0]]["x"]
