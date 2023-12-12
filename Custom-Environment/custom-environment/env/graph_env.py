@@ -180,7 +180,7 @@ class parallel_env(ParallelEnv):
             return
 
         if len(self.agents) == 2:
-            string = "Current state: Agent1: {}, {} , Agent2: {}, {}".format(
+            string = "Current state: Agent0: {}, {} , Agent1: {}, {}".format(
                 self.state[self.agents[0]]["x"], self.state[self.agents[0]]["y"],
                 self.state[self.agents[1]]["x"], self.state[self.agents[1]]["y"]
             )
