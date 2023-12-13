@@ -186,7 +186,7 @@ class parallel_env(ParallelEnv):
             )
         else:
             string = "Game over"
-        print(string)
+        #print(string)
 
     def close(self):
         """
@@ -270,7 +270,7 @@ class parallel_env(ParallelEnv):
 
         # get rewards for each agent, might add small negative living reward?
         rewards = {
-            self.agents[i]: newForces[self.agents[i]] - oldForces[self.agents[i]]
+            self.agents[i]: oldForces[self.agents[i]] - newForces[self.agents[i]]
             for i in range(len(self.agents))
         }
 
