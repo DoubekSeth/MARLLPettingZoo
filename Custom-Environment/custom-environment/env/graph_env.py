@@ -26,7 +26,7 @@ def getCurrentTotalForcesFR(self, agent):
     """
     springForces = calcSpringForces(self, agent)
     repulsionForces = calcRepulsionForces(self, agent)
-    totalForces = springForces + repulsionForces
+    totalForces = springForces - repulsionForces
     return np.dot(totalForces, totalForces) ** 0.5
 
 
