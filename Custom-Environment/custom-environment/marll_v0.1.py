@@ -105,9 +105,15 @@ def partition_circle_act(target_agent, action, observations, env, r, partitions)
     return vec_counts
 
 
-
 env = graph_env.parallel_env(render_mode="human")
-observations, infos = env.reset()
+observations, infos = env.reset(options={"elements": {"nodes": [
+    {"data": {"id": '1'}},
+    {"data": {"id": '0'}}
+], "edges": [
+    {"data": {"source": '0', "target": '1', "directed": 'false'}}
+    ]},
+    "randomInit": True,
+})
 
 # Create an agent
 learner = QAgent.QLearningAgent(env=env, epsilon=0.05, gamma=0.8, alpha=0.2, features=partition_circle_act)

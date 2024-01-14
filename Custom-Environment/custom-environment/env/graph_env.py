@@ -22,7 +22,7 @@ def getCurrentTotalForcesFR(self, agent):
     springForces = calcSpringForces(self, agent)
     repulsionForces = calcRepulsionForces(self, agent)
     totalForces = springForces - repulsionForces
-    return np.dot(totalForces, totalForces)**0.5
+    return np.dot(totalForces, totalForces) ** 0.5
 
 
 def calcSpringForces(self, agent):
@@ -49,12 +49,14 @@ def calcSpringForce(self, edge):
     source = edge["source"]
     target = edge["target"]
 
+    print(self.state)
+
     lengthX = self.state[target]["x"] - self.state[source]["x"]
     lengthY = self.state[target]["y"] - self.state[source]["y"]
 
     length = (lengthX ** 2 + lengthY ** 2) ** 0.5
 
-    #Avoid division by 0
+    # Avoid division by 0
     if length == 0: return 0
 
     springForce = SPRING_CONSTANT * np.max([0, length - IDEAL_EDGE_LENGTH])
@@ -89,8 +91,8 @@ def calcRepulsionForce(self, agent, agentOther):
     distX = self.state[agent]["x"] - self.state[agentOther]["x"]
     distY = self.state[agent]["y"] - self.state[agentOther]["y"]
     distanceSquared = (distX ** 2 + distY ** 2)
-    #Avoid divide by 0
-    if distanceSquared == 0 : return 0
+    # Avoid divide by 0
+    if distanceSquared == 0: return 0
 
     distance = (distX ** 2 + distY ** 2) ** 0.5
 
@@ -145,12 +147,12 @@ class parallel_env(ParallelEnv):
 
         These attributes should not be changed after initialization.
         """
-        self.possible_agents = ["agent_" + str(r) for r in range(2)]
-
-        # optional: a mapping between agent name and ID
-        self.agent_name_mapping = dict(
-            zip(self.possible_agents, list(range(len(self.possible_agents))))
-        )
+        # self.possible_agents = ["agent_" + str(r) for r in range(2)]
+        #
+        # # optional: a mapping between agent name and ID
+        # self.agent_name_mapping = dict(
+        #     zip(self.possible_agents, list(range(len(self.possible_agents))))
+        # )
         self.render_mode = render_mode
 
     # Observation space should be defined here.
@@ -160,7 +162,8 @@ class parallel_env(ParallelEnv):
     def observation_space(self, agent):
         # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
         # Implement Later
-        return Dict({"sensor": Tuple(Discrete(50), Discrete(50), Discrete(50), Discrete(50), Discrete(50), Discrete(50))})
+        return Dict(
+            {"sensor": Tuple(Discrete(50), Discrete(50), Discrete(50), Discrete(50), Discrete(50), Discrete(50))})
 
     # Action space should be defined here.
     # If your spaces change over time, remove this line (disable caching).
@@ -186,7 +189,7 @@ class parallel_env(ParallelEnv):
             )
         else:
             string = "Game over"
-        #print(string)
+        # print(string)
 
     def close(self):
         """
@@ -200,21 +203,33 @@ class parallel_env(ParallelEnv):
         """
         Reset needs to initialize the `agents` attribute and must set up the
         environment so that render(), and step() can be called without issues.
-        Here it initializes the `num_moves` variable which counts the number of
-        hands that are played.
+        Passed into options is the graph that we are trying to "solve", as an
+        dictionary that contains a list of nodes and edges.
         Returns the observations for each agent
         """
-        self.agents = self.possible_agents[:]
+        nodes = ["agent_"+node['data']['id'] for node in options["elements"]["nodes"]]  # List of names of nodes
+        edges = [{"source": "agent_"+edge['data']['source'], "target": "agent_"+edge['data']['target']}
+                 for edge in options["elements"]["edges"]]  # List of {source, target}
+        print(nodes)
+        print(edges)
+        self.agents = nodes
         self.num_moves = 0
         observations = {agent: {} for agent in self.agents}
         infos = {agent: {} for agent in self.agents}
-        #Manually, creating this for now. Hopefully can be passed in
-        observations[self.agents[0]]["x"] = -25
-        observations[self.agents[0]]["y"] = -25
-        observations[self.agents[0]]["edges"] = [{"source": self.agents[0], "target": self.agents[1]}]
-        observations[self.agents[1]]["x"] = 25
-        observations[self.agents[1]]["y"] = 25
-        observations[self.agents[1]]["edges"] = [{"source": self.agents[0], "target": self.agents[1]}]
+        # Manually, creating this for now. Hopefully can be passed in
+        # Initialize stuff for nodes
+        for node in nodes:
+            if(options["randomInit"]):
+                observations[node]["x"] = np.random.normal(loc=0, scale=50)
+                observations[node]["y"] = np.random.normal(loc=0, scale=50)
+            observations[node]["edges"] = []
+        # Assigning edges to the agents
+        for edge in edges:
+            src = edge["source"]
+            tgt = edge["target"]
+            observations[src]["edges"].append(edge)
+            observations[tgt]["edges"].append(edge)
+        print(observations)
         self.state = observations
 
         return observations, infos
@@ -250,13 +265,13 @@ class parallel_env(ParallelEnv):
         }
         self.state = observations
 
-        #Process each agent's action
+        # Process each agent's action
         displacement = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
         delta = 0.5
         for agent, action in actions.items():
             currAgent = observations[agent]
-            currAgent["x"] = currAgent["x"] + displacement[action][0]*delta
-            currAgent["y"] = currAgent["y"] + displacement[action][1]*delta
+            currAgent["x"] = currAgent["x"] + displacement[action][0] * delta
+            currAgent["y"] = currAgent["y"] + displacement[action][1] * delta
 
         self.num_moves += 1
         env_truncation = self.num_moves >= NUM_ITERS
