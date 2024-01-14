@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 NUM_ITERS = 100
-SPRING_CONSTANT = 0.5
-REPULSION_CONSTANT = 0.5
+SPRING_CONSTANT = 5
+REPULSION_CONSTANT = 5
 IDEAL_EDGE_LENGTH = 10
 
 
@@ -26,7 +26,7 @@ def getCurrentTotalForcesFR(self, agent):
     """
     springForces = calcSpringForces(self, agent)
     repulsionForces = calcRepulsionForces(self, agent)
-    totalForces = springForces - repulsionForces
+    totalForces = springForces + repulsionForces
     return np.dot(totalForces, totalForces) ** 0.5
 
 
@@ -188,7 +188,6 @@ class parallel_env(ParallelEnv):
         if self.render_mode == "human":
             #Only display 10 plots
             if self.num_moves % (NUM_ITERS/10) == 0:
-                print("Going!")
                 G = nx.Graph()
                 G.add_nodes_from(self.agents)
                 edges = [(edge['source'], edge['target']) for edge in self.edges]

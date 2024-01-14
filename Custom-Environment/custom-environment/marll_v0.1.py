@@ -119,9 +119,9 @@ while env.agents:
     # actions = {agent: env.action_space(agent).sample() for agent in env.agents}
     actions = {agent: learner.getAction(states[agent]) for agent in env.agents}
     observations, rewards, terminations, truncations, infos = env.step(actions)
-    #print(rewards)
-    #print("Action:", actions)
-    #print(distance("agent_0", "agent_1", observations))
+    print(rewards)
+    print("Action:", actions)
+    print(distance("agent_0", "agent_1", observations))
     print(observations)
     nextStates = {agent: {'agent': agent, 'observations': observations, 'env': env} for agent in env.agents}
     for agent in env.agents:

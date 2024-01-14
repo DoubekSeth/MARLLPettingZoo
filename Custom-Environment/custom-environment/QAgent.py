@@ -127,7 +127,10 @@ class QLearningAgent:
         features = np.append(
             self.featureExtractor(state['agent'], action, state['observations'], state['env'], r=20, partitions=6),
             (self.distance(target_agent=state['agent'], action=action, observations=state['observations'])/100))
-        self.weights += -1*self.alpha * difference * features
+        self.weights += np.multiply(self.alpha * difference * features, np.append(np.ones(6), -1))
+        # Need to clip so that weights don't explode :)
+        self.weights = np.clip(self.weights, -10, 10)
+        print(self.weights)
 
     # Very hacky, will delete later
     def distance(self, target_agent, action, observations):
