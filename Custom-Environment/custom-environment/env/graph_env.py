@@ -7,6 +7,11 @@ from gymnasium.spaces import Dict, Discrete, Tuple
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, wrappers
 
+# For graphing
+import networkx as nx
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
 NUM_ITERS = 100
 SPRING_CONSTANT = 0.5
 REPULSION_CONSTANT = 0.5
@@ -48,8 +53,6 @@ def calcSpringForce(self, edge):
     """
     source = edge["source"]
     target = edge["target"]
-
-    print(self.state)
 
     lengthX = self.state[target]["x"] - self.state[source]["x"]
     lengthY = self.state[target]["y"] - self.state[source]["y"]
@@ -181,14 +184,27 @@ class parallel_env(ParallelEnv):
                 "You are calling render method without specifying any render mode."
             )
             return
+        # Display a matplotlib graph
+        if self.render_mode == "human":
+            #Only display 10 plots
+            if self.num_moves % (NUM_ITERS/10) == 0:
+                print("Going!")
+                G = nx.Graph()
+                G.add_nodes_from(self.agents)
+                edges = [(edge['source'], edge['target']) for edge in self.edges]
+                G.add_edges_from(edges)
+                # Add positions to the nodes
+                pos = {node: (self.state[node]["x"], self.state[node]["y"]) for node in self.state}
+                nx.draw(G, pos=pos)
+                plt.show()
 
-        if len(self.agents) == 2:
-            string = "Current state: Agent0: {}, {} , Agent1: {}, {}".format(
-                self.state[self.agents[0]]["x"], self.state[self.agents[0]]["y"],
-                self.state[self.agents[1]]["x"], self.state[self.agents[1]]["y"]
-            )
-        else:
-            string = "Game over"
+        # if len(self.agents) == 2:
+        #     string = "Current state: Agent0: {}, {} , Agent1: {}, {}".format(
+        #         self.state[self.agents[0]]["x"], self.state[self.agents[0]]["y"],
+        #         self.state[self.agents[1]]["x"], self.state[self.agents[1]]["y"]
+        #     )
+        # else:
+        #     string = "Game over"
         # print(string)
 
     def close(self):
@@ -207,19 +223,18 @@ class parallel_env(ParallelEnv):
         dictionary that contains a list of nodes and edges.
         Returns the observations for each agent
         """
-        nodes = ["agent_"+node['data']['id'] for node in options["elements"]["nodes"]]  # List of names of nodes
-        edges = [{"source": "agent_"+edge['data']['source'], "target": "agent_"+edge['data']['target']}
+        nodes = ["agent_" + node['data']['id'] for node in options["elements"]["nodes"]]  # List of names of nodes
+        edges = [{"source": "agent_" + edge['data']['source'], "target": "agent_" + edge['data']['target']}
                  for edge in options["elements"]["edges"]]  # List of {source, target}
-        print(nodes)
-        print(edges)
         self.agents = nodes
+        self.edges = edges
         self.num_moves = 0
         observations = {agent: {} for agent in self.agents}
         infos = {agent: {} for agent in self.agents}
         # Manually, creating this for now. Hopefully can be passed in
         # Initialize stuff for nodes
         for node in nodes:
-            if(options["randomInit"]):
+            if options["randomInit"]:
                 observations[node]["x"] = np.random.normal(loc=0, scale=50)
                 observations[node]["y"] = np.random.normal(loc=0, scale=50)
             observations[node]["edges"] = []
@@ -249,7 +264,7 @@ class parallel_env(ParallelEnv):
             self.agents = []
             return {}, {}, {}, {}, {}
 
-        # Find all old forces, as reward = new forces - old forces
+        # Find all old forces, as reward = old forces - new forces
         oldForces = {
             self.agents[i]: getCurrentTotalForcesFR(self, self.agents[i])
             for i in range(len(self.agents))
@@ -284,6 +299,8 @@ class parallel_env(ParallelEnv):
         }
 
         # get rewards for each agent, might add small negative living reward?
+        #print("old forces:", oldForces)
+        #print("new forces:", newForces)
         rewards = {
             self.agents[i]: oldForces[self.agents[i]] - newForces[self.agents[i]]
             for i in range(len(self.agents))

@@ -1,10 +1,6 @@
 from env import graph_env
 import QAgent
 
-# For graphing
-import plotly.graph_objects as go
-import networkx as nx
-
 # Numpy
 import numpy as np
 
@@ -76,7 +72,7 @@ def partition_circle_act(target_agent, action, observations, env, r, partitions)
     # Do the action step!
     # Process each agent's action
     displacement = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
-    delta = 0.5
+    delta = 0.1
     next_x = observations[target_agent]["x"] + displacement[action][0] * delta
     next_y = observations[target_agent]["y"] + displacement[action][1] * delta
 
@@ -123,9 +119,10 @@ while env.agents:
     # actions = {agent: env.action_space(agent).sample() for agent in env.agents}
     actions = {agent: learner.getAction(states[agent]) for agent in env.agents}
     observations, rewards, terminations, truncations, infos = env.step(actions)
-    print(rewards)
-    print("Action:", actions)
-    print(distance("agent_0", "agent_1", observations))
+    #print(rewards)
+    #print("Action:", actions)
+    #print(distance("agent_0", "agent_1", observations))
+    print(observations)
     nextStates = {agent: {'agent': agent, 'observations': observations, 'env': env} for agent in env.agents}
     for agent in env.agents:
         learner.update(states[agent], actions[agent], nextStates[agent], rewards[agent])

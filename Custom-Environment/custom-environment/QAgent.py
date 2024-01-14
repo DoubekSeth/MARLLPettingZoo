@@ -15,7 +15,7 @@ class QLearningAgent:
 
         self.qValues = Counter()
 
-        self.weights = np.ones(7)#hardcoded for now, remind me to change later!
+        self.weights = np.append(np.zeros(6), -1)#hardcoded for now, remind me to change later!
 
         self.featureExtractor = args['features']
 
@@ -56,7 +56,7 @@ class QLearningAgent:
         action_space_size = actions.n
         for action in range(action_space_size):
             currQ = self.getQValue(state, action)
-            print(currQ, action)
+            #print(currQ, action)
             if currQ > max_value:
                 max_value = currQ
                 max_action = action
@@ -83,12 +83,13 @@ class QLearningAgent:
 
         # If true (happens epsilon fraction of times), take random action
         if random.random() < self.epsilon:
+            #print("randact")
             action = random.choice(range(legalActions.n))
         # If not true, choose best outcome
         else:
             action = self.computeActionFromQValues(state)
         # util.raiseNotDefined()
-
+        #print("Final weight:", self.weights[6])
         return action
 
     def getLegalActions(self, state):
@@ -112,9 +113,9 @@ class QLearningAgent:
         "*** YOUR CODE HERE ***"
         sum = 0
         features = np.append(self.featureExtractor(state['agent'], action, state['observations'], state['env'], r=20, partitions=6),
-                             self.distance(target_agent=state['agent'], action=action, observations=state['observations'])/100)#Manually coded, should change
+                             (self.distance(target_agent=state['agent'], action=action, observations=state['observations'])/100))#Manually coded, should change
         sum = np.dot(self.weights, features)
-        #print(sum, features, self.weights)
+        #print("weights:", self.weights)
         return sum
 
     def update(self, state, action, nextState, reward):
@@ -125,8 +126,8 @@ class QLearningAgent:
         difference = (reward + self.gamma * (self.computeValueFromQValues(nextState))) - self.getQValue(state, action)
         features = np.append(
             self.featureExtractor(state['agent'], action, state['observations'], state['env'], r=20, partitions=6),
-            self.distance(target_agent=state['agent'], action=action, observations=state['observations']) / 100)
-        self.weights += self.alpha * difference * features
+            (self.distance(target_agent=state['agent'], action=action, observations=state['observations'])/100))
+        self.weights += -1*self.alpha * difference * features
 
     # Very hacky, will delete later
     def distance(self, target_agent, action, observations):
