@@ -113,7 +113,7 @@ class QLearningAgent:
         "*** YOUR CODE HERE ***"
         sum = 0
         features = np.append(self.featureExtractor(state['agent'], action, state['observations'], state['env'], r=20, partitions=6),
-                             (self.distance(target_agent=state['agent'], action=action, observations=state['observations'])/100))#Manually coded, should change
+                             (self.distance(target_agent=state['agent'], action=action, observations=state['observations']) - 10)**2)#Manually coded, should change
         sum = np.dot(self.weights, features)
         #print("weights:", self.weights)
         return sum
@@ -126,7 +126,7 @@ class QLearningAgent:
         difference = (reward + self.gamma * (self.computeValueFromQValues(nextState))) - self.getQValue(state, action)
         features = np.append(
             self.featureExtractor(state['agent'], action, state['observations'], state['env'], r=20, partitions=6),
-            (self.distance(target_agent=state['agent'], action=action, observations=state['observations'])/100))
+            (self.distance(target_agent=state['agent'], action=action, observations=state['observations']) - 10)**2)
         self.weights += np.multiply(self.alpha * difference * features, np.append(np.ones(6), -1))
         # Need to clip so that weights don't explode :)
         self.weights = np.clip(self.weights, -10, 10)
