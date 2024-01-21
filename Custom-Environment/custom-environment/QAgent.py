@@ -15,7 +15,7 @@ class QLearningAgent:
 
         self.qValues = Counter()
         self.featureExtractor = args['features']
-        self.weights = np.append(np.ones(self.featureExtractor[2]-2), -1*np.ones(2))
+        self.weights = np.append(np.ones(self.featureExtractor[3]-3), -1*np.ones(3))
 
 
 
@@ -112,9 +112,10 @@ class QLearningAgent:
         """
         "*** YOUR CODE HERE ***"
         feature_funcs = self.featureExtractor
-        features = np.append(
-            feature_funcs[0](state['agent'], action, state['observations'], state['env'], r=20, partitions=6),
-            feature_funcs[1](state['agent'], action, state['observations'], state['env'], 2, 10))
+        features = np.concatenate((
+            feature_funcs[0](state['agent'], action, state['observations'], state['env'], r=10, partitions=6),
+            feature_funcs[1](state['agent'], action, state['observations'], state['env'], 2, 10),
+            feature_funcs[2](state['agent'], action, state['observations'], state['env'], 10)))
 
         q_sum = np.dot(self.weights, features)
         #print("weights:", self.weights)
@@ -127,12 +128,13 @@ class QLearningAgent:
         "*** YOUR CODE HERE ***"
         difference = (reward + self.gamma * (self.computeValueFromQValues(nextState))) - self.getQValue(state, action)
         feature_funcs = self.featureExtractor
-        features = np.append(
-            feature_funcs[0](state['agent'], action, state['observations'], state['env'], r=20, partitions=6),
-            feature_funcs[1](state['agent'], action, state['observations'], state['env'], 2, 10))
-        self.weights += np.multiply(self.alpha * difference * features, np.append(np.ones(6), -1*np.ones(2)))
+        features = np.concatenate((
+            feature_funcs[0](state['agent'], action, state['observations'], state['env'], r=10, partitions=6),
+            feature_funcs[1](state['agent'], action, state['observations'], state['env'], 2, 10),
+            feature_funcs[2](state['agent'], action, state['observations'], state['env'], 10)))
+        self.weights += np.multiply(self.alpha * difference * features, np.append(np.ones(6), -1*np.ones(3)))
         # Need to clip so that weights don't explode :)
-        self.weights = np.clip(self.weights, -10, 10)
+        self.weights = np.clip(self.weights, -1000, 1000)
         print(self.weights)
 
 

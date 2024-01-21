@@ -12,7 +12,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-NUM_ITERS = 100
+NUM_ITERS = 1000
 SPRING_CONSTANT = 5
 REPULSION_CONSTANT = 5
 IDEAL_EDGE_LENGTH = 10
@@ -186,8 +186,8 @@ class parallel_env(ParallelEnv):
             return
         # Display a matplotlib graph
         if self.render_mode == "human":
-            #Only display 3 plots (Too many requests otherwise)
-            if self.num_moves % (NUM_ITERS/3) == 0:
+            # Only display 3 plots (Too many requests otherwise)
+            if self.num_moves % (NUM_ITERS/4) == 0:
                 G = nx.Graph()
                 G.add_nodes_from(self.agents)
                 edges = [(edge['source'], edge['target']) for edge in self.edges]
@@ -201,6 +201,7 @@ class parallel_env(ParallelEnv):
                 #plt.pause(0.1)
                 plt.draw()
                 plt.show()
+                #plt.savefig("graph"+str(self.num_moves))
 
     def close(self):
         """

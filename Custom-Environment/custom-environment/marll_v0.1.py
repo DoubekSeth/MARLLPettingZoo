@@ -32,10 +32,7 @@ def partition_circle_act(target_agent, action, observations, env, r, partitions)
     """
     # Do the action step!
     # Process each agent's action
-    displacement = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
-    delta = 0.1
-    next_x = observations[target_agent]["x"] + displacement[action][0] * delta
-    next_y = observations[target_agent]["y"] + displacement[action][1] * delta
+    next_x, next_y = takeStep(target_agent, action, observations)
 
     vec_counts = np.zeros(partitions)
 
@@ -73,10 +70,7 @@ def distToKNearestNeighborsWithEdgeLength(target_agent, action, observations, en
     :return: distance as a vector, with the first being the closest
     """
 
-    displacement = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
-    delta = 0.5
-    next_x = observations[target_agent]["x"] + displacement[action][0] * delta
-    next_y = observations[target_agent]["y"] + displacement[action][1] * delta
+    next_x, next_y = takeStep(target_agent, action, observations)
 
     dist_dict = {}
     for agent in env.agents:
@@ -90,6 +84,54 @@ def distToKNearestNeighborsWithEdgeLength(target_agent, action, observations, en
     else:
         dists = np.fromiter(dist_dict.values(), dtype=float)
         return dists[0]
+
+
+def distToFarthestConnectedNode(target_agent, action, observations, env, idealEdgeLength):
+    """
+    Returns the distance between two agents in a given observation
+    :param target_agent: String representation of target_agent
+    :param action: action taken by the target agent
+    :param observations: observations of the state
+    :param env: environment of graph
+    :return: distance as a vector, with the first being the closest
+    """
+
+    next_x, next_y = takeStep(target_agent, action, observations)
+
+    connectedNodes = findConnectedNodes(target_agent, observations)
+    largest_dist = 0
+    for agent in env.agents:
+        if agent != target_agent and agent in connectedNodes:
+            dist = ((np.sqrt((next_x - observations[agent]['x']) ** 2 +
+                             (next_y - observations[agent]['y']) ** 2)) - idealEdgeLength) ** 2
+            if dist > largest_dist:
+                largest_dist = dist
+    return [largest_dist]
+
+
+def findConnectedNodes(target_agent, observations):
+    """
+    Finds the names of all nodes connected to a node
+    :param target_agent: target node
+    :param observations: observations of the state space
+    :return: list of node names
+    """
+    edges = observations[target_agent]['edges']
+    connectedNodes = []
+    for edge in edges:
+        if edge['source'] == target_agent:
+            connectedNodes.append(edge['target'])
+        else:
+            connectedNodes.append(edge['source'])
+    return connectedNodes
+
+
+def takeStep(target_agent, action, observations):
+    displacement = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
+    delta = 0.5
+    next_x = observations[target_agent]["x"] + displacement[action][0] * delta
+    next_y = observations[target_agent]["y"] + displacement[action][1] * delta
+    return next_x, next_y
 
 
 env = graph_env.parallel_env(render_mode="human")
@@ -125,8 +167,8 @@ observations, infos = env.reset(options={"elements": {
 
 # Create an agent
 learner = QAgent.QLearningAgent(env=env, epsilon=0.05, gamma=0.8, alpha=0.2,
-                                features=[partition_circle_act, distToKNearestNeighborsWithEdgeLength,
-                                          8])  # Last number is total number of features
+                                features=[partition_circle_act, distToKNearestNeighborsWithEdgeLength, distToFarthestConnectedNode,
+                                          9])  # Last number is total number of features
 
 while env.agents:
     states = {agent: {'agent': agent, 'observations': observations, 'env': env} for agent in env.agents}
