@@ -186,25 +186,21 @@ class parallel_env(ParallelEnv):
             return
         # Display a matplotlib graph
         if self.render_mode == "human":
-            #Only display 10 plots
-            if self.num_moves % (NUM_ITERS/10) == 0:
+            #Only display 3 plots (Too many requests otherwise)
+            if self.num_moves % (NUM_ITERS/3) == 0:
                 G = nx.Graph()
                 G.add_nodes_from(self.agents)
                 edges = [(edge['source'], edge['target']) for edge in self.edges]
                 G.add_edges_from(edges)
                 # Add positions to the nodes
                 pos = {node: (self.state[node]["x"], self.state[node]["y"]) for node in self.state}
-                nx.draw(G, pos=pos)
-                plt.show()
 
-        # if len(self.agents) == 2:
-        #     string = "Current state: Agent0: {}, {} , Agent1: {}, {}".format(
-        #         self.state[self.agents[0]]["x"], self.state[self.agents[0]]["y"],
-        #         self.state[self.agents[1]]["x"], self.state[self.agents[1]]["y"]
-        #     )
-        # else:
-        #     string = "Game over"
-        # print(string)
+                plt.clf()
+                nx.draw(G, pos=pos)
+
+                #plt.pause(0.1)
+                plt.draw()
+                plt.show()
 
     def close(self):
         """

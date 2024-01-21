@@ -14,10 +14,10 @@ class QLearningAgent:
         # print(self.epsilon, self.gamma, self.alpha)
 
         self.qValues = Counter()
-
-        self.weights = np.append(np.zeros(6), -1)#hardcoded for now, remind me to change later!
-
         self.featureExtractor = args['features']
+        self.weights = np.append(np.ones(self.featureExtractor[2]-2), -1*np.ones(2))
+
+
 
     def computeValueFromQValues(self, state):
         """
@@ -111,12 +111,14 @@ class QLearningAgent:
           where * is the dotProduct operator
         """
         "*** YOUR CODE HERE ***"
-        sum = 0
-        features = np.append(self.featureExtractor(state['agent'], action, state['observations'], state['env'], r=20, partitions=6),
-                             (self.distance(target_agent=state['agent'], action=action, observations=state['observations']) - 10)**2)#Manually coded, should change
-        sum = np.dot(self.weights, features)
+        feature_funcs = self.featureExtractor
+        features = np.append(
+            feature_funcs[0](state['agent'], action, state['observations'], state['env'], r=20, partitions=6),
+            feature_funcs[1](state['agent'], action, state['observations'], state['env'], 2, 10))
+
+        q_sum = np.dot(self.weights, features)
         #print("weights:", self.weights)
-        return sum
+        return q_sum
 
     def update(self, state, action, nextState, reward):
         """
@@ -124,32 +126,13 @@ class QLearningAgent:
         """
         "*** YOUR CODE HERE ***"
         difference = (reward + self.gamma * (self.computeValueFromQValues(nextState))) - self.getQValue(state, action)
+        feature_funcs = self.featureExtractor
         features = np.append(
-            self.featureExtractor(state['agent'], action, state['observations'], state['env'], r=20, partitions=6),
-            (self.distance(target_agent=state['agent'], action=action, observations=state['observations']) - 10)**2)
-        self.weights += np.multiply(self.alpha * difference * features, np.append(np.ones(6), -1))
+            feature_funcs[0](state['agent'], action, state['observations'], state['env'], r=20, partitions=6),
+            feature_funcs[1](state['agent'], action, state['observations'], state['env'], 2, 10))
+        self.weights += np.multiply(self.alpha * difference * features, np.append(np.ones(6), -1*np.ones(2)))
         # Need to clip so that weights don't explode :)
         self.weights = np.clip(self.weights, -10, 10)
         print(self.weights)
 
-    # Very hacky, will delete later
-    def distance(self, target_agent, action, observations):
-        """
-        Returns the distance between two agents in a given obsevation
-        :param agent1: String representation of agent1
-        :param agent2: String representation of agent2
-        :param observations: Dictionary of observations
-        :return: distance
-        """
-        if(target_agent == "agent_0"):
-            agent2 = "agent_1"
-        else:
-            agent2 = "agent_0"
 
-        displacement = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
-        delta = 0.5
-        next_x = observations[target_agent]["x"] + displacement[action][0] * delta
-        next_y = observations[target_agent]["y"] + displacement[action][1] * delta
-
-        return np.sqrt((next_x - observations[agent2]['x']) ** 2 + (
-               next_y - observations[agent2]['y']) ** 2)
