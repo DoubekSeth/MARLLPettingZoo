@@ -10,7 +10,6 @@ from pettingzoo.utils import parallel_to_aec, wrappers
 # For graphing
 import networkx as nx
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 
 NUM_ITERS = 1000
 SPRING_CONSTANT = 5
