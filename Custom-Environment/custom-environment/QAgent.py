@@ -15,7 +15,7 @@ class QLearningAgent:
 
         self.qValues = Counter()
         self.featureExtractor = args['features']
-        self.weights = np.append(np.ones(self.featureExtractor[3]-3), -1*np.ones(3))
+        self.weights = np.ones(self.featureExtractor[-1])
 
 
 
@@ -105,18 +105,25 @@ class QLearningAgent:
     def getWeights(self):
         return self.weights
 
+    def getFeatures(self, state, action):
+        feature_funcs = self.featureExtractor
+        features = []
+        features.append(-1/10000*feature_funcs[0](state['agent'], action, state['observations'], state['env'], 100)[0])
+        features.append(
+            -1 / 10000 * feature_funcs[1](state['agent'], action, state['observations'], state['env'], 100)[0])
+        features.append(1/4*feature_funcs[2](state['agent'], action, state['observations']))
+        features = np.array(features)
+        #print(features)
+        return features
+
+
     def getQValue(self, state, action):
         """
           Should return Q(state,action) = w * featureVector
           where * is the dotProduct operator
         """
         "*** YOUR CODE HERE ***"
-        feature_funcs = self.featureExtractor
-        features = np.concatenate((
-            feature_funcs[0](state['agent'], action, state['observations'], state['env'], r=10, partitions=6),
-            feature_funcs[1](state['agent'], action, state['observations'], state['env'], 2, 10),
-            feature_funcs[2](state['agent'], action, state['observations'], state['env'], 10)))
-
+        features = self.getFeatures(state, action)
         q_sum = np.dot(self.weights, features)
         #print("weights:", self.weights)
         return q_sum
@@ -127,14 +134,10 @@ class QLearningAgent:
         """
         "*** YOUR CODE HERE ***"
         difference = (reward + self.gamma * (self.computeValueFromQValues(nextState))) - self.getQValue(state, action)
-        feature_funcs = self.featureExtractor
-        features = np.concatenate((
-            feature_funcs[0](state['agent'], action, state['observations'], state['env'], r=10, partitions=6),
-            feature_funcs[1](state['agent'], action, state['observations'], state['env'], 2, 10),
-            feature_funcs[2](state['agent'], action, state['observations'], state['env'], 10)))
-        self.weights += np.multiply(self.alpha * difference * features, np.append(np.ones(6), -1*np.ones(3)))
+        features = self.getFeatures(state, action)
+        self.weights += self.alpha * difference * features
         # Need to clip so that weights don't explode :)
         self.weights = np.clip(self.weights, -1000, 1000)
-        print(self.weights)
+        # print(self.weights)
 
 

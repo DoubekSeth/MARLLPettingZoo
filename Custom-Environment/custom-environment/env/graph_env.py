@@ -12,9 +12,9 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 NUM_ITERS = 1000
-SPRING_CONSTANT = 5
-REPULSION_CONSTANT = 5
-IDEAL_EDGE_LENGTH = 10
+SPRING_CONSTANT = 0.2
+REPULSION_CONSTANT = 4500
+IDEAL_EDGE_LENGTH = 100
 
 
 def getCurrentTotalForcesFR(self, agent):
@@ -186,7 +186,7 @@ class parallel_env(ParallelEnv):
         # Display a matplotlib graph
         if self.render_mode == "human":
             # Only display 3 plots (Too many requests otherwise)
-            if self.num_moves % (NUM_ITERS/4) == 0:
+            if self.num_moves % (NUM_ITERS / 4) == 0:
                 G = nx.Graph()
                 G.add_nodes_from(self.agents)
                 edges = [(edge['source'], edge['target']) for edge in self.edges]
@@ -197,10 +197,10 @@ class parallel_env(ParallelEnv):
                 plt.clf()
                 nx.draw(G, pos=pos)
 
-                #plt.pause(0.1)
+                # plt.pause(0.1)
                 plt.draw()
                 plt.show()
-                #plt.savefig("graph"+str(self.num_moves))
+                # plt.savefig("graph"+str(self.num_moves))
 
     def close(self):
         """
@@ -239,7 +239,7 @@ class parallel_env(ParallelEnv):
             tgt = edge["target"]
             observations[src]["edges"].append(edge)
             observations[tgt]["edges"].append(edge)
-        print(observations)
+        # print(observations)
         self.state = observations
 
         return observations, infos
@@ -267,13 +267,7 @@ class parallel_env(ParallelEnv):
 
         terminations = {agent: False for agent in self.agents}
 
-        # current observation is position of state, as well as graph
-        observations = {
-            self.agents[i]: {"x": self.state[self.agents[i]]["x"], "y": self.state[self.agents[i]]["y"],
-                             "edges": self.state[self.agents[i]]["edges"]}
-            for i in range(len(self.agents))
-        }
-        self.state = observations
+        observations = self.state
 
         # Process each agent's action
         displacement = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
@@ -283,19 +277,27 @@ class parallel_env(ParallelEnv):
             currAgent["x"] = currAgent["x"] + displacement[action][0] * delta
             currAgent["y"] = currAgent["y"] + displacement[action][1] * delta
 
-        self.num_moves += 1
-        env_truncation = self.num_moves >= NUM_ITERS
-        truncations = {agent: env_truncation for agent in self.agents}
-
         # Find all new forces, as reward = new forces - old forces
         newForces = {
             self.agents[i]: getCurrentTotalForcesFR(self, self.agents[i])
             for i in range(len(self.agents))
         }
 
+        # current observation is position of state, as well as graph
+        observations = {
+            self.agents[i]: {"x": self.state[self.agents[i]]["x"], "y": self.state[self.agents[i]]["y"],
+                             "edges": self.state[self.agents[i]]["edges"], "forces": newForces[self.agents[i]]}
+            for i in range(len(self.agents))
+        }
+        self.state = observations
+
+        self.num_moves += 1
+        env_truncation = self.num_moves >= NUM_ITERS
+        truncations = {agent: env_truncation for agent in self.agents}
+
         # get rewards for each agent, might add small negative living reward?
-        #print("old forces:", oldForces)
-        #print("new forces:", newForces)
+        # print("old forces:", oldForces)
+        # print("new forces:", newForces)
         rewards = {
             self.agents[i]: oldForces[self.agents[i]] - newForces[self.agents[i]]
             for i in range(len(self.agents))
