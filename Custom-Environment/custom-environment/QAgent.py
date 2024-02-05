@@ -11,12 +11,11 @@ class QLearningAgent:
         self.epsilon = args['epsilon']
         self.gamma = args['gamma']
         self.alpha = args['alpha']
+        self.weights = args['weights']
         # print(self.epsilon, self.gamma, self.alpha)
 
         self.qValues = Counter()
         self.featureExtractor = args['features']
-        self.weights = np.ones(self.featureExtractor[-1])
-
 
 
     def computeValueFromQValues(self, state):
@@ -51,7 +50,7 @@ class QLearningAgent:
         actions = self.getLegalActions(state)
         #if len(actions) == 0:
         #    return None
-        max_action = None
+        max_action = 4
         max_value = float("-inf")
         action_space_size = actions.n
         for action in range(action_space_size):
@@ -108,10 +107,13 @@ class QLearningAgent:
     def getFeatures(self, state, action):
         feature_funcs = self.featureExtractor
         features = []
-        features.append(-1/10000*feature_funcs[0](state['agent'], action, state['observations'], state['env'], 100)[0])
-        features.append(
-            -1 / 10000 * feature_funcs[1](state['agent'], action, state['observations'], state['env'], 100)[0])
-        features.append(1/4*feature_funcs[2](state['agent'], action, state['observations']))
+        features.append(1/10*feature_funcs[0](state['agent'], action, state['observations']))  # Angle Variance
+        features.append(1/20000*feature_funcs[1](state['agent'], action, state['observations'], 100))  # Edge Length Variance
+        features.append(1/20000*feature_funcs[2](state['agent'], action, state['observations'], state['env'], 400))  # Dist to unconnected in radius
+        features.append(1/100*feature_funcs[3](state['agent'], action, state['observations'], state['env']))  # Dist to closest Unconnected
+        features.append(1/200 * feature_funcs[4](state['agent'], action, state['observations'], state['env'], 100))  # Dist to furthest connected
+        features.append(1/100 * feature_funcs[5](state['agent'], action, state['observations'], state['env'], 100))  # Dist to closest connected
+        features.append(1/10*feature_funcs[-1]())  # Bias func
         features = np.array(features)
         #print(features)
         return features
@@ -133,11 +135,11 @@ class QLearningAgent:
            Should update your weights based on transition
         """
         "*** YOUR CODE HERE ***"
-        difference = (reward + self.gamma * (self.computeValueFromQValues(nextState))) - self.getQValue(state, action)
+        difference = reward + self.gamma * self.computeValueFromQValues(nextState) - self.getQValue(state, action)
         features = self.getFeatures(state, action)
         self.weights += self.alpha * difference * features
         # Need to clip so that weights don't explode :)
-        self.weights = np.clip(self.weights, -1000, 1000)
+        # self.weights = np.clip(self.weights, -50, 50)
         # print(self.weights)
 
 

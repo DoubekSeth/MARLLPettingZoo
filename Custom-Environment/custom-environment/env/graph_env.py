@@ -11,7 +11,7 @@ from pettingzoo.utils import parallel_to_aec, wrappers
 import networkx as nx
 import matplotlib.pyplot as plt
 
-NUM_ITERS = 1000
+NUM_ITERS = 500
 SPRING_CONSTANT = 0.2
 REPULSION_CONSTANT = 4500
 IDEAL_EDGE_LENGTH = 100
@@ -185,22 +185,25 @@ class parallel_env(ParallelEnv):
             return
         # Display a matplotlib graph
         if self.render_mode == "human":
-            # Only display 3 plots (Too many requests otherwise)
-            if self.num_moves % (NUM_ITERS / 4) == 0:
-                G = nx.Graph()
-                G.add_nodes_from(self.agents)
-                edges = [(edge['source'], edge['target']) for edge in self.edges]
-                G.add_edges_from(edges)
-                # Add positions to the nodes
-                pos = {node: (self.state[node]["x"], self.state[node]["y"]) for node in self.state}
+            # Only display 2 plots (Too many requests otherwise)
+            if self.num_moves % (NUM_ITERS / 2) == 0:
+                self.displayPlot()
 
-                plt.clf()
-                nx.draw(G, pos=pos)
+    def displayPlot(self):
+        G = nx.Graph()
+        G.add_nodes_from(self.agents)
+        edges = [(edge['source'], edge['target']) for edge in self.edges]
+        G.add_edges_from(edges)
+        # Add positions to the nodes
+        pos = {node: (self.state[node]["x"], self.state[node]["y"]) for node in self.state}
 
-                # plt.pause(0.1)
-                plt.draw()
-                plt.show()
-                # plt.savefig("graph"+str(self.num_moves))
+        plt.clf()
+        nx.draw(G, pos=pos)
+
+        # plt.pause(0.1)
+        plt.draw()
+        plt.show()
+        #plt.savefig("graph")
 
     def close(self):
         """
@@ -271,7 +274,7 @@ class parallel_env(ParallelEnv):
 
         # Process each agent's action
         displacement = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
-        delta = 0.5
+        delta = 10
         for agent, action in actions.items():
             currAgent = observations[agent]
             currAgent["x"] = currAgent["x"] + displacement[action][0] * delta
@@ -299,7 +302,7 @@ class parallel_env(ParallelEnv):
         # print("old forces:", oldForces)
         # print("new forces:", newForces)
         rewards = {
-            self.agents[i]: oldForces[self.agents[i]] - newForces[self.agents[i]]
+            self.agents[i]: (oldForces[self.agents[i]] - newForces[self.agents[i]])
             for i in range(len(self.agents))
         }
 
@@ -308,6 +311,7 @@ class parallel_env(ParallelEnv):
         infos = {agent: {} for agent in self.agents}
 
         if env_truncation:
+            self.displayPlot()
             self.agents = []
 
         if self.render_mode == "human":
