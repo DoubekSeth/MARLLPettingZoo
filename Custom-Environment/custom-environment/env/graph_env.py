@@ -197,11 +197,21 @@ class parallel_env(ParallelEnv):
         # Add positions to the nodes
         pos = {node: (self.state[node]["x"], self.state[node]["y"]) for node in self.state}
 
-        plt.clf()
-        nx.draw(G, pos=pos)
+        # Useful for debugging
+        # options = {
+        #     "font_size": 0,
+        #     "node_size": 300,
+        #     "node_color": "white",
+        #     "edgecolors": "black",
+        #     "linewidths": 1,
+        #     "width": 1,
+        # }
 
-        # plt.pause(0.1)
-        plt.draw()
+        nx.draw(G, pos=pos), #**options) #nx.draw_networkx
+
+        # ax = plt.gca()
+        # ax.margins(0.20)
+        # plt.axis("off")
         plt.show()
         #plt.savefig("graph")
 
@@ -244,6 +254,7 @@ class parallel_env(ParallelEnv):
             observations[tgt]["edges"].append(edge)
         # print(observations)
         self.state = observations
+        #self.displayPlot()
 
         return observations, infos
 

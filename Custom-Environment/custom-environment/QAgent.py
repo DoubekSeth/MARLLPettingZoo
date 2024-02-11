@@ -108,11 +108,12 @@ class QLearningAgent:
         feature_funcs = self.featureExtractor
         features = []
         features.append(1/10*feature_funcs[0](state['agent'], action, state['observations']))  # Angle Variance
-        features.append(1/20000*feature_funcs[1](state['agent'], action, state['observations'], 100))  # Edge Length Variance
-        features.append(1/20000*feature_funcs[2](state['agent'], action, state['observations'], state['env'], 400))  # Dist to unconnected in radius
+        features.append(1/2000*feature_funcs[1](state['agent'], action, state['observations'], 100))  # Edge Length Variance
+        features.append(1/10*feature_funcs[2](state['agent'], action, state['observations'], state['env'], 4500))  # Dist to all unconnected
         features.append(1/100*feature_funcs[3](state['agent'], action, state['observations'], state['env']))  # Dist to closest Unconnected
         features.append(1/200 * feature_funcs[4](state['agent'], action, state['observations'], state['env'], 100))  # Dist to furthest connected
         features.append(1/100 * feature_funcs[5](state['agent'], action, state['observations'], state['env'], 100))  # Dist to closest connected
+        features.append(1/10 * (feature_funcs[6](state['agent'], action, state['observations'], state['env']) + 1)) # Number edge crossings, augmented by 1/10
         features.append(1/10*feature_funcs[-1]())  # Bias func
         features = np.array(features)
         #print(features)
