@@ -11,7 +11,7 @@ from pettingzoo.utils import parallel_to_aec, wrappers
 import networkx as nx
 import matplotlib.pyplot as plt
 
-NUM_ITERS = 500
+NUM_ITERS = 2000
 SPRING_CONSTANT = 0.2
 REPULSION_CONSTANT = 4500
 IDEAL_EDGE_LENGTH = 100
@@ -23,13 +23,13 @@ def getCurrentTotalForcesFR(self, agent):
     :param agent: agent to find the forces for
     :return: total force for an agent as a number
     """
-    springForces = calcSpringForces(self, agent)
-    repulsionForces = calcRepulsionForces(self, agent)
+    springForces = calcSpringForcesFR(self, agent)
+    repulsionForces = calcRepulsionForcesFR(self, agent)
     totalForces = springForces - repulsionForces
     return np.dot(totalForces, totalForces) ** 0.5
 
 
-def calcSpringForces(self, agent):
+def calcSpringForcesFR(self, agent):
     """
     Calculates the spring forces for a given agent
     :param agent: agent to find the spring forces for
@@ -39,12 +39,12 @@ def calcSpringForces(self, agent):
     springForces = np.zeros(2)
 
     for edge in edges:
-        springForces += calcSpringForce(self, edge)
+        springForces += calcSpringForceFR(self, edge)
 
     return springForces
 
 
-def calcSpringForce(self, edge):
+def calcSpringForceFR(self, edge):
     """
     Calculate a specific spring force along one edge
     :param edge: edge to calculate the spring force for
@@ -61,14 +61,16 @@ def calcSpringForce(self, edge):
     # Avoid division by 0
     if length == 0: return 0
 
-    springForce = SPRING_CONSTANT * np.max([0, length - IDEAL_EDGE_LENGTH])
+    # old np.max([0, length - IDEAL_EDGE_LENGTH])
+    # changing back to what was in kinimesi
+    springForce = ((length - IDEAL_EDGE_LENGTH)**2)/IDEAL_EDGE_LENGTH
 
     springForces = np.array([springForce * (lengthX / length), springForce * (lengthY / length)])
 
     return springForces
 
 
-def calcRepulsionForces(self, agent):
+def calcRepulsionForcesFR(self, agent):
     """
     Calculate all the repulsion forces for an agent
     :param self:
@@ -78,12 +80,12 @@ def calcRepulsionForces(self, agent):
     repulsionForces = np.zeros(2)
 
     for agentOther in self.agents:
-        repulsionForces += calcRepulsionForce(self, agent, agentOther)
+        repulsionForces += calcRepulsionForceFR(self, agent, agentOther)
 
     return repulsionForces
 
 
-def calcRepulsionForce(self, agent, agentOther):
+def calcRepulsionForceFR(self, agent, agentOther):
     """
     Calculates a single repulsion force between two nodes
     :param agent: first node
@@ -98,7 +100,7 @@ def calcRepulsionForce(self, agent, agentOther):
 
     distance = (distX ** 2 + distY ** 2) ** 0.5
 
-    repulsionForce = REPULSION_CONSTANT / distanceSquared
+    repulsionForce = (IDEAL_EDGE_LENGTH**2) / distance
 
     repulsionForces = np.array([repulsionForce * distX / distance, repulsionForce * distY / distance])
 
@@ -187,7 +189,8 @@ class parallel_env(ParallelEnv):
         if self.render_mode == "human":
             # Only display 2 plots (Too many requests otherwise)
             if self.num_moves % (NUM_ITERS / 2) == 0:
-                self.displayPlot()
+                # self.displayPlot()
+                pass
 
     def displayPlot(self):
         G = nx.Graph()
@@ -207,13 +210,13 @@ class parallel_env(ParallelEnv):
         #     "width": 1,
         # }
 
-        nx.draw(G, pos=pos), #**options) #nx.draw_networkx
+        nx.draw(G, pos=pos),  # **options) #nx.draw_networkx
 
         # ax = plt.gca()
         # ax.margins(0.20)
         # plt.axis("off")
         plt.show()
-        #plt.savefig("graph")
+        # plt.savefig("graph")
 
     def close(self):
         """
@@ -245,6 +248,8 @@ class parallel_env(ParallelEnv):
             if options["randomInit"]:
                 observations[node]["x"] = np.random.normal(loc=0, scale=50)
                 observations[node]["y"] = np.random.normal(loc=0, scale=50)
+            observations[node]["num_iters"] = self.num_moves
+            observations[node]["max_iters"] = NUM_ITERS
             observations[node]["edges"] = []
         # Assigning edges to the agents
         for edge in edges:
@@ -254,7 +259,7 @@ class parallel_env(ParallelEnv):
             observations[tgt]["edges"].append(edge)
         # print(observations)
         self.state = observations
-        #self.displayPlot()
+        self.displayPlot()
 
         return observations, infos
 
@@ -285,7 +290,7 @@ class parallel_env(ParallelEnv):
 
         # Process each agent's action
         displacement = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
-        delta = 10
+        delta = 9 * (1 - (self.num_moves / NUM_ITERS)) + 1
         for agent, action in actions.items():
             currAgent = observations[agent]
             currAgent["x"] = currAgent["x"] + displacement[action][0] * delta
@@ -300,7 +305,9 @@ class parallel_env(ParallelEnv):
         # current observation is position of state, as well as graph
         observations = {
             self.agents[i]: {"x": self.state[self.agents[i]]["x"], "y": self.state[self.agents[i]]["y"],
-                             "edges": self.state[self.agents[i]]["edges"], "forces": newForces[self.agents[i]]}
+                             "edges": self.state[self.agents[i]]["edges"], "forces": newForces[self.agents[i]],
+                             "num_iters": self.num_moves, "max_iters": NUM_ITERS}
+            # Unfortunately, due to how I setup the code the iters have to assigned to a node
             for i in range(len(self.agents))
         }
         self.state = observations
